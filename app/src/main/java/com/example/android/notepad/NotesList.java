@@ -19,6 +19,7 @@ package com.example.android.notepad;
 import com.example.android.notepad.NotePad;
 
 import android.app.ListActivity;
+import android.app.SearchManager;
 import android.content.ClipboardManager;
 import android.content.ClipData;
 import android.content.ComponentName;
@@ -37,7 +38,11 @@ import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
+
+import java.util.Locale;
 
 
 /**
@@ -59,12 +64,17 @@ public class NotesList extends ListActivity {
      * The columns needed by the cursor adapter
      */
     private static final String[] PROJECTION = new String[] {
-            NotePad.Notes._ID, // 0
-            NotePad.Notes.COLUMN_NAME_TITLE, // 1
+            NotePad.Notes._ID,
+            NotePad.Notes.COLUMN_NAME_TITLE,
+            NotePad.Notes.COLUMN_NAME_CREATE_DATE
     };
 
     /** The index of the title column */
     private static final int COLUMN_INDEX_TITLE = 1;
+
+    // 添加搜索相关变量
+    private SearchView searchView;
+    private String currentFilter = "";
 
     /**
      * onCreate is called when Android starts this Activity from scratch.
@@ -96,17 +106,48 @@ public class NotesList extends ListActivity {
          */
         getListView().setOnCreateContextMenuListener(this);
 
+        // 处理搜索意图（如果从搜索小部件进入）
+        handleIntent(getIntent());
+
+        // 执行初始查询
+        performQuery(currentFilter);
+
         /* Performs a managed query. The Activity handles closing and requerying the cursor
          * when needed.
          *
          * Please see the introductory note about performing provider operations on the UI thread.
          */
+    }
+
+    /**
+     * 处理搜索意图
+     */
+    private void handleIntent(Intent intent) {
+        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
+            // 从搜索小部件接收搜索查询
+            currentFilter = intent.getStringExtra(SearchManager.QUERY);
+        }
+    }
+
+    /**
+     * 执行查询并显示结果
+     */
+    private void performQuery(String filter) {
+        String selection = null;
+        String[] selectionArgs = null;
+
+        // 如果有搜索过滤器，构建查询条件
+        if (filter != null && !filter.isEmpty()) {
+            selection = NotePad.Notes.COLUMN_NAME_TITLE + " LIKE ?";
+            selectionArgs = new String[]{"%" + filter + "%"};
+        }
+
         Cursor cursor = managedQuery(
-            getIntent().getData(),            // Use the default content URI for the provider.
-            PROJECTION,                       // Return the note ID and title for each note.
-            null,                             // No where clause, return all records.
-            null,                             // No where clause, therefore no where column values.
-            NotePad.Notes.DEFAULT_SORT_ORDER  // Use the default sort order.
+                getIntent().getData(),            // Use the default content URI for the provider.
+                PROJECTION,                       // Return the note ID and title for each note.
+                selection,                        // Where clause (if filtering)
+                selectionArgs,                    // Where clause arguments
+                NotePad.Notes.DEFAULT_SORT_ORDER  // Use the default sort order.
         );
 
         /*
@@ -118,24 +159,58 @@ public class NotesList extends ListActivity {
          */
 
         // The names of the cursor columns to display in the view, initialized to the title column
-        String[] dataColumns = { NotePad.Notes.COLUMN_NAME_TITLE } ;
-
-        // The view IDs that will display the cursor columns, initialized to the TextView in
-        // noteslist_item.xml
-        int[] viewIDs = { android.R.id.text1 };
+        String[] dataColumns = {
+                NotePad.Notes.COLUMN_NAME_TITLE,           // 用于标题
+                NotePad.Notes.COLUMN_NAME_CREATE_DATE      // 用于时间
+        };
+        int[] viewIDs = {
+                R.id.note_title,     // 对应布局中的标题 TextView
+                R.id.note_timestamp  // 对应布局中的时间 TextView
+        };
 
         // Creates the backing adapter for the ListView.
-        SimpleCursorAdapter adapter
-            = new SimpleCursorAdapter(
-                      this,                             // The Context for the ListView
-                      R.layout.noteslist_item,          // Points to the XML for a list item
-                      cursor,                           // The cursor to get items from
-                      dataColumns,
-                      viewIDs
-              );
+        SimpleCursorAdapter adapter = new SimpleCursorAdapter(
+                this,
+                R.layout.noteslist_item,          // 您的新布局，包含两个 TextView
+                cursor,
+                new String[] {
+                        NotePad.Notes.COLUMN_NAME_TITLE,     // 标题
+                        NotePad.Notes.COLUMN_NAME_CREATE_DATE  // 创建时间
+                },
+                new int[] {
+                        R.id.note_title,     // 标题显示控件
+                        R.id.note_timestamp  // 时间显示控件
+                }
+        );
 
         // Sets the ListView's adapter to be the cursor adapter that was just created.
         setListAdapter(adapter);
+        adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
+            @Override
+            public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
+                // 如果当前绑定的是时间列（即第2列，索引为1，因为从0开始）
+                if (columnIndex == 2) { // 对应的是 COLUMN_NAME_CREATE_DATE，索引 2
+                    // 读取 long 类型的时间戳
+                    long timestamp = cursor.getLong(columnIndex);
+                    // 格式化为可读时间，比如 "2024-06-01 14:30"
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm", Locale.getDefault());
+                    String formattedDate = sdf.format(new java.util.Date(timestamp));
+                    // 设置到 TextView
+                    ((TextView) view).setText(formattedDate);
+                    return true; // 表示已处理
+                }
+                return false; // 其他列让系统默认处理
+            }
+        });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+        performQuery(currentFilter);
     }
 
     /**
@@ -157,6 +232,40 @@ public class NotesList extends ListActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.list_options_menu, menu);
 
+        // 添加搜索菜单项
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        searchView = (SearchView) menu.findItem(R.id.menu_search).getActionView();
+
+        if (searchView != null) {
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+            searchView.setIconifiedByDefault(true); // 默认折叠搜索框
+
+            // 设置搜索监听器
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    currentFilter = query;
+                    performQuery(currentFilter);
+                    searchView.clearFocus(); // 隐藏键盘
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    // 实时搜索（可选，可能会影响性能）
+                    // currentFilter = newText;
+                    // performQuery(currentFilter);
+                    return false;
+                }
+            });
+
+            // 如果有当前过滤器，设置搜索框文本
+            if (currentFilter != null && !currentFilter.isEmpty()) {
+                searchView.setQuery(currentFilter, false);
+                searchView.setIconified(false);
+            }
+        }
+
         // Generate any additional actions that can be performed on the
         // overall list.  In a normal install, there are no additional
         // actions found here, but this allows other applications to extend
@@ -176,7 +285,6 @@ public class NotesList extends ListActivity {
         // The paste menu item is enabled if there is data on the clipboard.
         ClipboardManager clipboard = (ClipboardManager)
                 getSystemService(Context.CLIPBOARD_SERVICE);
-
 
         MenuItem mPasteItem = menu.findItem(R.id.menu_paste);
 
@@ -224,43 +332,31 @@ public class NotesList extends ListActivity {
              * Add alternatives to the menu
              */
             menu.addIntentOptions(
-                Menu.CATEGORY_ALTERNATIVE,  // Add the Intents as options in the alternatives group.
-                Menu.NONE,                  // A unique item ID is not required.
-                Menu.NONE,                  // The alternatives don't need to be in order.
-                null,                       // The caller's name is not excluded from the group.
-                specifics,                  // These specific options must appear first.
-                intent,                     // These Intent objects map to the options in specifics.
-                Menu.NONE,                  // No flags are required.
-                items                       // The menu items generated from the specifics-to-
-                                            // Intents mapping
+                    Menu.CATEGORY_ALTERNATIVE,  // Add the Intents as options in the alternatives group.
+                    Menu.NONE,                  // A unique item ID is not required.
+                    Menu.NONE,                  // The alternatives don't need to be in order.
+                    null,                       // The caller's name is not excluded from the group.
+                    specifics,                  // These specific options must appear first.
+                    intent,                     // These Intent objects map to the options in specifics.
+                    Menu.NONE,                  // No flags are required.
+                    items                       // The menu items generated from the specifics-to-
+                    // Intents mapping
             );
-                // If the Edit menu item exists, adds shortcuts for it.
-                if (items[0] != null) {
+            // If the Edit menu item exists, adds shortcuts for it.
+            if (items[0] != null) {
 
-                    // Sets the Edit menu item shortcut to numeric "1", letter "e"
-                    items[0].setShortcut('1', 'e');
-                }
-            } else {
-                // If the list is empty, removes any existing alternative actions from the menu
-                menu.removeGroup(Menu.CATEGORY_ALTERNATIVE);
+                // Sets the Edit menu item shortcut to numeric "1", letter "e"
+                items[0].setShortcut('1', 'e');
             }
+        } else {
+            // If the list is empty, removes any existing alternative actions from the menu
+            menu.removeGroup(Menu.CATEGORY_ALTERNATIVE);
+        }
 
         // Displays the menu
         return true;
     }
 
-    /**
-     * This method is called when the user selects an option from the menu, but no item
-     * in the list is selected. If the option was INSERT, then a new Intent is sent out with action
-     * ACTION_INSERT. The data from the incoming Intent is put into the new Intent. In effect,
-     * this triggers the NoteEditor activity in the NotePad application.
-     *
-     * If the item was not INSERT, then most likely it was an alternative option from another
-     * application. The parent method is called to process the item.
-     * @param item The menu item that was selected by the user
-     * @return True, if the INSERT menu item was selected; otherwise, the result of calling
-     * the parent method.
-     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.menu_add) {
@@ -269,7 +365,7 @@ public class NotesList extends ListActivity {
              * has to have action ACTION_INSERT. No category is set, so DEFAULT is assumed.
              * In effect, this starts the NoteEditor Activity in NotePad.
              */
-            startActivity(new Intent(Intent.ACTION_INSERT, getIntent().getData()));
+            startActivity(new Intent(Intent.ACTION_INSERT, getIntent().getData()).setClassName(/* TODO: provide the application ID. For example: */ getPackageName(), "com.example.android.notepad.NoteEditor"));
             return true;
         } else if (item.getItemId() == R.id.menu_paste) {
             /*
@@ -277,25 +373,12 @@ public class NotesList extends ListActivity {
              * has to have action ACTION_PASTE. No category is set, so DEFAULT is assumed.
              * In effect, this starts the NoteEditor Activity in NotePad.
              */
-            startActivity(new Intent(Intent.ACTION_PASTE, getIntent().getData()));
+            startActivity(new Intent(Intent.ACTION_PASTE, getIntent().getData()).setClassName(/* TODO: provide the application ID. For example: */ getPackageName(), "com.example.android.notepad.NoteEditor"));
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * This method is called when the user context-clicks a note in the list. NotesList registers
-     * itself as the handler for context menus in its ListView (this is done in onCreate()).
-     *
-     * The only available options are COPY and DELETE.
-     *
-     * Context-click is equivalent to long-press.
-     *
-     * @param menu A ContexMenu object to which items should be added.
-     * @param view The View for which the context menu is being constructed.
-     * @param menuInfo Data associated with view.
-     * @throws ClassCastException
-     */
     @Override
     public void onCreateContextMenu(ContextMenu menu, View view, ContextMenuInfo menuInfo) {
 
@@ -394,7 +477,7 @@ public class NotesList extends ListActivity {
         int id = item.getItemId();
         if (id == R.id.context_open) {
             // Launch activity to view/edit the currently selected item
-            startActivity(new Intent(Intent.ACTION_EDIT, noteUri));
+            startActivity(new Intent(Intent.ACTION_EDIT, noteUri).setClassName(/* TODO: provide the application ID. For example: */ getPackageName(), "com.example.android.notepad.NoteEditor"));
             return true;
         } else if (id == R.id.context_copy) { //BEGIN_INCLUDE(copy)
             // Gets a handle to the clipboard service.
@@ -457,7 +540,7 @@ public class NotesList extends ListActivity {
 
             // Sends out an Intent to start an Activity that can handle ACTION_EDIT. The
             // Intent's data is the note ID URI. The effect is to call NoteEdit.
-            startActivity(new Intent(Intent.ACTION_EDIT, uri));
+            startActivity(new Intent(Intent.ACTION_EDIT, uri).setClassName(/* TODO: provide the application ID. For example: */ getPackageName(), "com.example.android.notepad.NoteEditor"));
         }
     }
 }
