@@ -42,4 +42,8 @@
     <string name="nothing_to_save">There is nothing to save</string>
     <string name="menu_search">搜索</string>
     <string name="search_hint">搜索笔记...</string>
+    <string name="note_page_description">笔记编辑页面，包含标题和编辑区域</string>
+    <string name="note_title_description">笔记标题栏</string>
+    <string name="note_editor_description">笔记编辑区域，可以在这里输入和编辑您的笔记内容</string>
+    <string name="note_editor_hint">在此输入笔记内容...</string>
 </resources>
