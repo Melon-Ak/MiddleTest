@@ -6,6 +6,7 @@
     android:orientation="vertical"
     android:padding="16dp"
     android:background="#FFFFFF">
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -15,24 +16,24 @@
         android:textColor="#333333"
         android:gravity="center"
         android:layout_marginBottom="12dp" />
+
     <EditText
         android:id="@+id/note"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-    android:background="#FAFAFA"
-    android:padding="16dp"
-    android:gravity="top"
-    android:textSize="18sp"
-    android:textColor="#333333"
-    android:inputType="textMultiLine|textCapSentences"
-    android:lineSpacingExtra="4dp"
-    android:lineSpacingMultiplier="1.2"
-    android:scrollbars="vertical"
-    android:hint="在此输入笔记内容..."
-    android:importantForAccessibility="auto"
-    android:focusable="true"
-    android:focusableInTouchMode="true"
-    android:imeOptions="actionDone" />
-
+        android:background="@color/bg_white"
+        android:padding="16dp"
+        android:gravity="top"
+        android:textSize="18sp"
+        android:textColor="#333333"
+        android:inputType="textMultiLine|textCapSentences"
+        android:lineSpacingExtra="4dp"
+        android:lineSpacingMultiplier="1.2"
+        android:scrollbars="vertical"
+        android:hint="在此输入笔记内容..."
+        android:importantForAccessibility="auto"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:imeOptions="actionDone" />
 </LinearLayout>
