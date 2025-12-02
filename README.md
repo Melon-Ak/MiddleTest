@@ -1,3 +1,3 @@
-# NotePad
-项目来自于官方早期的数据库操作的基本教程。
-更多的解析参考[Android Sample--NotePad解析](https://blog.csdn.net/llfjfz/article/details/67638499)
+对NotePad笔记的功能添加时间戳和笔记查询功能（不区分大小写）
+附加功能美化了笔记展示与编辑页面
+新增了笔记编辑页面更换背景色功能（在右上角的多功能框中选择）
