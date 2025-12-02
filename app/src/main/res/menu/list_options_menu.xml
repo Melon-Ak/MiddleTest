@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <!--  This is our one standard application action (creating a new note). -->
     <item android:id="@+id/menu_add"
         android:icon="@drawable/ic_menu_compose"
         android:title="@string/menu_add"
         android:alphabeticShortcut='a'
         android:showAsAction="always" />
-
-    <!-- 添加搜索菜单项 -->
     <item android:id="@+id/menu_search"
         android:icon="@android:drawable/ic_search_category_default"
         android:title="@string/menu_search"
@@ -15,11 +12,21 @@
         android:showAsAction="always|collapseActionView"
         android:actionViewClass="android.widget.SearchView"
         android:iconifiedByDefault="true" />
-
-    <!--  If there is currently data in the clipboard, this adds a PASTE menu item to the menu
-          so that the user can paste in the data.. -->
     <item android:id="@+id/menu_paste"
         android:icon="@drawable/ic_menu_compose"
         android:title="@string/menu_paste"
         android:alphabeticShortcut='p' />
+    <item android:id="@+id/menu_sort"
+        android:title="排序"
+        android:alphabeticShortcut='o'
+        android:showAsAction="never">
+        <menu>
+            <item android:id="@+id/menu_sort_title"
+                android:title="按标题排序" />
+            <item android:id="@+id/menu_sort_word_count"
+                android:title="按字数排序" />
+            <item android:id="@+id/menu_sort_date"
+                android:title="按日期排序" />
+        </menu>
+    </item>
 </menu>

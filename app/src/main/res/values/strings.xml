@@ -46,4 +46,10 @@
     <string name="note_title_description">笔记标题栏</string>
     <string name="note_editor_description">笔记编辑区域，可以在这里输入和编辑您的笔记内容</string>
     <string name="note_editor_hint">在此输入笔记内容...</string>
+    <string name="menu_sort">排序</string>
+    <string name="sort_by_title">按标题排序</string>
+    <string name="sort_by_word_count">按字数排序</string>
+    <string name="sort_by_date">按日期排序</string>
+    <string name="sort_order_ascending">升序</string>
+    <string name="sort_order_descending">降序</string>
 </resources>
